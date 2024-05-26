@@ -5,7 +5,7 @@ from . import db
 
 auth = Blueprint('auth', __name__)
 
-@auth.route('/login', methods=['GET', 'POST'])
+@auth.route('/login/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -19,7 +19,7 @@ def login():
             flash('Login failed. Check your email and password.', 'danger')
     return render_template('login.html')
 
-@auth.route('/signup', methods=['GET', 'POST'])
+@auth.route('/signup/', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -37,7 +37,7 @@ def signup():
             return redirect(url_for('auth.login'))
     return render_template('signup.html')
 
-@auth.route('/logout')
+@auth.route('/logout/')
 @login_required
 def logout():
     logout_user()
