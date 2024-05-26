@@ -6,6 +6,7 @@ class Photo(db.Model):
     caption = db.Column(db.String(250), nullable=False)
     file = db.Column(db.String(250), nullable=False)
     description = db.Column(db.String(600), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     @property
     def serialize(self):

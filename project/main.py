@@ -3,6 +3,7 @@ from flask import (
   flash, redirect, url_for, send_from_directory, 
   current_app, make_response
 )
+from flask_login import login_required, current_user
 from .models import Photo
 from sqlalchemy import asc, text
 from . import db
