@@ -13,13 +13,13 @@
                 </div>
             </div>
             
-            {% if logged_in %}
+            {% if current_user.is_authenticated %}
             <div class="link-box">
-                Logout
+                <p><a href="{{ url_for('auth.logout') }}">Logout</a></p>
             </div>
             {% else %}
             <div class="link-box">
-                <p><a href="{{ url_for('auth.login') }}">Login</a>
+                <p><a href="{{ url_for('auth.login') }}">Login</a></p>
             </div>  
                 
             <div class="link-box">
@@ -28,4 +28,4 @@
             {% endif %}
         </div>
     </div>  
-</header>   
+</header>
