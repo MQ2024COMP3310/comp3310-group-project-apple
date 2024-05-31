@@ -9,19 +9,16 @@
 </head>
 <body>
     <div class="main-container">
-        {% include 'partials/header.html' %}
+        {% with logged_in = current_user.is_authenticated %}
+            {% include 'partials/header.html' %}
+        {% endwith %}
 
-        {% if self.content() %}
         <div class="content-container centered">
-            {% if self.heading() %}
-            <div class="content-heading-container">
-                {% block heading %}
-                {% endblock heading %}
-            </div>
-            {% endif %}
+            {% block heading %}
+            {% endblock heading %}
 
             {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
+            {% if messages and not ('Login successful!' in messages) %}
             <div id="flash" class="flashed-message-container">
             {% for category, message in messages %}
                 <div class="flash-message {{ category }}">
@@ -35,7 +32,6 @@
             {% block content %}
             {% endblock content %}
         </div>
-        {% endif %}
     </div>
 
     {% include 'partials/footer.html' %}

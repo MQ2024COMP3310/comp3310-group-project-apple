@@ -1,80 +1,81 @@
-from flask import (
-  Blueprint, render_template, request, 
-  flash, redirect, url_for, send_from_directory, 
-  current_app, make_response
-)
+from flask import Blueprint, render_template, request, flash, redirect, url_for, send_from_directory, current_app
+from flask_login import login_required, current_user
 from .models import Photo
-from sqlalchemy import asc, text
+from sqlalchemy import asc
 from . import db
 import os
 
 main = Blueprint('main', __name__)
 
-# This is called when the home page is rendered. It fetches all images sorted by filename.
 @main.route('/')
 def homepage():
-  photos = db.session.query(Photo).order_by(asc(Photo.file))
-  return render_template('index.html', photos = photos)
+    photos = db.session.query(Photo).order_by(asc(Photo.file))
+    return render_template('index.html', photos=photos)
 
 @main.route('/uploads/<name>')
 def display_file(name):
-  return send_from_directory(current_app.config["UPLOAD_DIR"], name)
+    return send_from_directory(current_app.config["UPLOAD_DIR"], name)
 
-# Upload a new photo
-@main.route('/upload/', methods=['GET','POST'])
+@login_required  # (secure coding principles) authenticated user only can upload a photo
+@main.route('/upload/', methods=['GET', 'POST'])
 def newPhoto():
-  if request.method == 'POST':
-    file = None
-    if "fileToUpload" in request.files:
-      file = request.files.get("fileToUpload")
+    if not current_user.is_authenticated:  # (secure coding principles) only authenticated user can upload a photo
+        flash("You must be logged in to upload photos.", "error")
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        file = request.files.get("fileToUpload")
+        if not file or not file.filename:
+            flash("No file selected!", "error")
+            return redirect(request.url)
+
+        filepath = os.path.join(current_app.config["UPLOAD_DIR"], file.filename)
+        file.save(filepath)
+
+        newPhoto = Photo(name=current_user.email, 
+                         caption=request.form['caption'],
+                         description=request.form['description'],
+                         file=file.filename,
+                         user_id=current_user.id)  # (secure coding principles) Save user_id of the uploader
+        db.session.add(newPhoto)
+        db.session.commit()
+        flash('New Photo %s Successfully Created' % newPhoto.name)
+        return redirect(url_for('main.homepage'))
     else:
-      flash("Invalid request!", "error")
+        return render_template('upload.html')
 
-    if not file or not file.filename:
-      flash("No file selected!", "error")
-      return redirect(request.url)
-
-    filepath = os.path.join(current_app.config["UPLOAD_DIR"], file.filename)
-    file.save(filepath)
-
-    newPhoto = Photo(name = request.form['user'], 
-                    caption = request.form['caption'],
-                    description = request.form['description'],
-                    file = file.filename)
-    db.session.add(newPhoto)
-    flash('New Photo %s Successfully Created' % newPhoto.name)
-    db.session.commit()
-    return redirect(url_for('main.homepage'))
-  else:
-    return render_template('upload.html')
-
-# This is called when clicking on Edit. Goes to the edit page.
-@main.route('/photo/<int:photo_id>/edit/', methods = ['GET', 'POST'])
+@login_required # (secure coding principles) user can edit a photo that user own
+@main.route('/photo/<int:photo_id>/edit/', methods=['GET', 'POST'])
 def editPhoto(photo_id):
-  editedPhoto = db.session.query(Photo).filter_by(id = photo_id).one()
-  if request.method == 'POST':
-    if request.form['user']:
-      editedPhoto.name = request.form['user']
-      editedPhoto.caption = request.form['caption']
-      editedPhoto.description = request.form['description']
-      db.session.add(editedPhoto)
-      db.session.commit()
-      flash('Photo Successfully Edited %s' % editedPhoto.name)
-      return redirect(url_for('main.homepage'))
-  else:
-    return render_template('edit.html', photo = editedPhoto)
+    editedPhoto = db.session.query(Photo).filter_by(id=photo_id).one()
+    if current_user.is_anonymous or (current_user.id != editedPhoto.user_id and not current_user.is_admin):
+        flash('You do not have permission to edit this photo.', 'error')
+        return redirect(url_for('main.homepage'))
 
+    if request.method == 'POST':
+        editedPhoto.name = request.form['user']
+        editedPhoto.caption = request.form['caption']
+        editedPhoto.description = request.form['description']
+        db.session.add(editedPhoto)
+        db.session.commit()
+        flash('Photo Successfully Edited %s' % editedPhoto.name)
+        return redirect(url_for('main.homepage'))
+    else:
+        return render_template('edit.html', photo=editedPhoto)
 
-# This is called when clicking on Delete. 
-@main.route('/photo/<int:photo_id>/delete/', methods = ['GET','POST'])
+@login_required # user can delete a photo that user own
+@main.route('/photo/<int:photo_id>/delete/', methods=['GET', 'POST'])
 def deletePhoto(photo_id):
-  fileResults = db.session.execute(text('select file from photo where id = ' + str(photo_id)))
-  filename = fileResults.first()[0]
-  filepath = os.path.join(current_app.config["UPLOAD_DIR"], filename)
-  os.unlink(filepath)
-  db.session.execute(text('delete from photo where id = ' + str(photo_id)))
-  db.session.commit()
-  
-  flash('Photo id %s Successfully Deleted' % photo_id)
-  return redirect(url_for('main.homepage'))
+    deletedPhoto = db.session.query(Photo).filter_by(id=photo_id).one()
+    if current_user.is_anonymous or (current_user.id != deletedPhoto.user_id and not current_user.is_admin): 
+        flash('You do not have permission to delete this photo.', 'error')
+        return redirect(url_for('main.homepage'))
 
+    filename = deletedPhoto.file
+    filepath = os.path.join(current_app.config["UPLOAD_DIR"], filename)
+    os.unlink(filepath)
+    db.session.delete(deletedPhoto)
+    db.session.commit()
+
+    flash('Photo id %s Successfully Deleted' % photo_id)
+    return redirect(url_for('main.homepage'))
