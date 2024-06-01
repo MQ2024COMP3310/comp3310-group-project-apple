@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_from_directory, current_app
 from flask_login import login_required, current_user
 from .models import Photo
-from sqlalchemy import asc
+from sqlalchemy import asc, or_
 from . import db
 import os
 
@@ -79,3 +79,20 @@ def deletePhoto(photo_id):
 
     flash('Photo id %s Successfully Deleted' % photo_id)
     return redirect(url_for('main.homepage'))
+
+# Add a new route for searching photos
+@main.route('/search', methods=['GET'])
+def search_photos():
+    query = request.args.get('query')
+    if not query:
+        flash("Please enter a search term.", "error")
+        return redirect(url_for('main.homepage'))
+
+    # photo can be searched with the name, caption, and description in seaching bar 
+    # (secure coding principles) using parameterized queries to prevent SQL injection
+    search = "%{}%".format(query)
+    photos = db.session.query(Photo).filter(
+        or_(Photo.name.ilike(search), Photo.caption.ilike(search), Photo.description.ilike(search))
+    ).order_by(asc(Photo.file)).all()
+
+    return render_template('index.html', photos=photos)
