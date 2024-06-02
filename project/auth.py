@@ -39,7 +39,7 @@ def login():
                 user.failed_attempts += 1  # (secure coding principles) increasing failed attempts count
                 if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
                     user.is_locked = True  # (secure coding principles) lock account 
-                    user.locked_until = datetime.utcnow() + LOCK_TIME  # (secure coding principles) lock duration
+                    user.locked_until = datetime.utcnow() + LOCK_TIME  # (secure coding principles) lock duration **should be random time for security.
                 db.session.commit()
                 flash('Invalid credentials. Please try again.', category='error')
         else:
