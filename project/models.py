@@ -19,6 +19,8 @@ class Photo(db.Model):
     file = db.Column(db.String(250), nullable=False)
     description = db.Column(db.String(600), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Add user_id field
+    private = db.Column(db.Boolean, default=False) # Task 9 implementation for Users can label their photos as “private”
+
 
     @property
     def serialize(self):
@@ -28,4 +30,5 @@ class Photo(db.Model):
            'caption': self.caption,
            'file': self.file,
            'desc': self.description,
+           'private': self.private #TASK 9 for unable to search the photo
        }

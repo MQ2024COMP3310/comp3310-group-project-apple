@@ -39,7 +39,10 @@ Upload a photo
             title="Provide a nice and short description to your photo"
             required></textarea>
     </div>
-
+    <div class="input-container">
+        <label for="private">Private</label>
+        <input id="private" type="checkbox" name="private" title="Mark this photo as private">
+    </div>
     <div class="input-container button green">
         <input type="submit" value="Upload">
         <a href="{{ url_for('main.homepage') }}">Cancel</a>

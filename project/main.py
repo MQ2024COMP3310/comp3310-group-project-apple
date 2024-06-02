@@ -9,7 +9,14 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def homepage():
-    photos = db.session.query(Photo).order_by(asc(Photo.file))
+    if current_user.is_authenticated:
+        # Show public photos and private photos owned by the current user
+        photos = db.session.query(Photo).filter(
+            or_(Photo.private == False, Photo.user_id == current_user.id)
+        ).order_by(asc(Photo.file)).all()
+    else:
+        # Only show public photos
+        photos = db.session.query(Photo).filter_by(private=False).order_by(asc(Photo.file)).all()
     return render_template('index.html', photos=photos)
 
 @main.route('/uploads/<name>')
@@ -31,12 +38,14 @@ def newPhoto():
 
         filepath = os.path.join(current_app.config["UPLOAD_DIR"], file.filename)
         file.save(filepath)
-
+       
+        # (secure coding principles) Save user_id of the uploader
         newPhoto = Photo(name=current_user.email, 
                          caption=request.form['caption'],
                          description=request.form['description'],
                          file=file.filename,
-                         user_id=current_user.id)  # (secure coding principles) Save user_id of the uploader
+                         user_id=current_user.id,
+                         private='private' in request.form)
         db.session.add(newPhoto)
         db.session.commit()
         flash('New Photo %s Successfully Created' % newPhoto.name)
@@ -80,6 +89,7 @@ def deletePhoto(photo_id):
     flash('Photo id %s Successfully Deleted' % photo_id)
     return redirect(url_for('main.homepage'))
 
+# Task 9 implementation for Photos are searchable using keywords from the metadata
 # Add a new route for searching photos
 @main.route('/search', methods=['GET'])
 def search_photos():
@@ -91,8 +101,28 @@ def search_photos():
     # photo can be searched with the name, caption, and description in seaching bar 
     # (secure coding principles) using parameterized queries to prevent SQL injection
     search = "%{}%".format(query)
-    photos = db.session.query(Photo).filter(
-        or_(Photo.name.ilike(search), Photo.caption.ilike(search), Photo.description.ilike(search))
-    ).order_by(asc(Photo.file)).all()
+    if current_user.is_authenticated:
+        # Show public photos and private photos owned by the current user
+        photos = db.session.query(Photo).filter(
+            or_(
+                Photo.name.ilike(search),
+                Photo.caption.ilike(search),
+                Photo.description.ilike(search)
+            ),
+            or_(
+                Photo.private == False,
+                Photo.user_id == current_user.id
+            )
+        ).order_by(asc(Photo.file)).all()
+    else:
+        # Only show public photos
+        photos = db.session.query(Photo).filter(
+            or_(
+                Photo.name.ilike(search),
+                Photo.caption.ilike(search),
+                Photo.description.ilike(search)
+            ),
+            Photo.private == False  # Exclude private photos
+        ).order_by(asc(Photo.file)).all()
 
     return render_template('index.html', photos=photos)

@@ -38,7 +38,10 @@ Edit a photo
             title="Provide a nice and short description to your photo"
             required>{{photo.description}}</textarea>
     </div>
-
+    <div class="input-container">
+        <label for="private">Private</label>
+        <input id="private" type="checkbox" name="private" {% if photo.private %}checked{% endif %}>
+    </div>
     <div class="input-container button green">
         <input type="submit" value="Save">
         <a href="{{ url_for('main.homepage') }}">Cancel</a>
