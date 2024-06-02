@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from flask import Flask, request, url_for, flash, redirect, render_template
 from myapp import app, db
 from myapp.models import Photo
+from project.main import search_photos
 
 class TestSearchPhotos(unittest.TestCase):
     def setUp(self):
