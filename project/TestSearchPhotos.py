@@ -59,11 +59,5 @@ class TestSearchPhotos(unittest.TestCase):
         self.assertTrue(any(search in str(arg) for arg in called_args))
         mock_render_template.assert_called_with('index.html', photos=["photo1", "photo2"])
 
-    # Additional test stubs for access control can be added here if applicable
-    # @patch('myapp.routes.request')
-    # def test_access_control(self, mock_request):
-    #     # Ensure that only authorized users can access the function
-    #     pass
-
 if __name__ == '__main__':
     unittest.main()
